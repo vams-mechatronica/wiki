@@ -23,10 +23,18 @@ services:
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USERNAME: ${SMTP_USERNAME:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+    # Public traffic arrives via the shared edge nginx (api-services repo,
+    # wiki.thenearbyshop.com -> docmost-wiki:3000 on webnet). The host port is
+    # bound to localhost only, for debugging on the server.
     ports:
-      - "${DOCMOST_BIND:-0.0.0.0}:${DOCMOST_PORT:-3000}:3000"
+      - "${DOCMOST_BIND:-127.0.0.1}:${DOCMOST_PORT:-3000}:3000"
     volumes:
       - docmost_data:/app/data/storage
+    networks:
+      default:
+      webnet:
+        aliases:
+          - docmost-wiki
 
   db:
     image: postgres:${POSTGRES_VERSION:-16-alpine}
@@ -58,3 +66,11 @@ volumes:
   docmost_data:
   db_data:
   redis_data:
+
+networks:
+  # Shared external network of the edge nginx (created once on the server:
+  # `docker network create webnet`). Only the docmost container joins it;
+  # Postgres and Redis stay on the project's private default network.
+  webnet:
+    external: true
+    name: ${EDGE_NETWORK:-webnet}

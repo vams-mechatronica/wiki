@@ -52,9 +52,9 @@ With `DEPLOY_TARGET=remote`, the pipeline sets `DOCKER_HOST=ssh://REMOTE_HOST`, 
 | `DOCMOST_VERSION` | `latest` | Image tag. **Pin a release in production.** |
 | `DEPLOY_TARGET` | `local` | `local` or `remote` |
 | `REMOTE_HOST` | `deploy@wiki.example.com` | SSH target for remote deploys |
-| `APP_URL` | `http://localhost:3000` | Public URL of the wiki |
+| `APP_URL` | `https://wiki.thenearbyshop.com` | Public URL of the wiki |
 | `DOCMOST_PORT` | `3000` | Host port |
-| `HEALTHCHECK_URL` | *(APP_URL)* | Use this if the agent can't reach the public URL |
+| `HEALTHCHECK_URL` | `http://docmost-wiki:3000` | Jenkins sits on `webnet`, so it checks the container directly. Leave empty to use `APP_URL` |
 | `SKIP_BACKUP` | `false` | Skip the pre-deploy backup |
 | `ENABLE_SMTP`, `SMTP_HOST`, `SMTP_PORT`, `MAIL_FROM_ADDRESS` | off | Email for invites and password resets |
 
@@ -93,8 +93,20 @@ docker compose up -d
 
 Then open the `APP_URL` and create the first workspace and admin account.
 
+## Public access: wiki.thenearbyshop.com
+
+TLS and routing are handled by the shared edge nginx in the
+[api-services](https://github.com/vams-mechatronica/api-services) repo
+(`deploy/nginx/api-stage.conf` and `deploy/nginx/domains.txt`):
+
+- The `docmost` container joins the external `webnet` Docker network with the alias **`docmost-wiki`**. The edge proxies `wiki.thenearbyshop.com` to `docmost-wiki:3000`, including WebSocket upgrades for live editing. Postgres and Redis stay on the project's private network.
+- Port 3000 is published on `127.0.0.1` only, so the wiki is reachable from outside only through the edge.
+- To go live:
+  1. Point the DNS A record for `wiki.thenearbyshop.com` at the server.
+  2. Run the api-services **edge** Jenkins job. It expands the shared certificate, then applies the nginx config.
+  3. Deploy this stack with `DEPLOY_TARGET=local`. Jenkins runs on the same host and is on `webnet`.
+
 ## Production notes
 
-- Put Docmost behind a TLS-terminating reverse proxy (Nginx, Caddy or Traefik). Set `APP_URL` to the `https://` URL and proxy WebSocket upgrades, which Docmost uses for real-time editing.
-- When the proxy runs on the same host, add `DOCMOST_BIND=127.0.0.1` to `.env` so port 3000 isn't exposed publicly.
+- Uploads through the edge are capped at 50 MB (`client_max_body_size` in the edge's wiki block).
 - Pin `DOCMOST_VERSION` and upgrade deliberately. Check the Docmost release notes before you do.

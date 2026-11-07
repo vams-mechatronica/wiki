@@ -41,11 +41,11 @@ pipeline {
                description: 'local = Docker on the Jenkins agent; remote = Docker over SSH on REMOTE_HOST')
         string(name: 'REMOTE_HOST', defaultValue: 'deploy@wiki.example.com',
                description: 'user@host for remote deployments (user must be in the docker group)')
-        string(name: 'APP_URL', defaultValue: 'http://localhost:3000',
+        string(name: 'APP_URL', defaultValue: 'https://wiki.thenearbyshop.com',
                description: 'Public URL of the wiki (used by Docmost for links)')
         string(name: 'DOCMOST_PORT', defaultValue: '3000', description: 'Host port to publish Docmost on')
-        string(name: 'HEALTHCHECK_URL', defaultValue: '',
-               description: 'URL the agent can reach for health checks (defaults to APP_URL)')
+        string(name: 'HEALTHCHECK_URL', defaultValue: 'http://docmost-wiki:3000',
+               description: 'URL the agent can reach for health checks (Jenkins is on webnet, so the container alias works; empty = APP_URL)')
         booleanParam(name: 'SKIP_BACKUP', defaultValue: false, description: 'Skip the pre-deploy backup')
         booleanParam(name: 'ENABLE_SMTP', defaultValue: false, description: 'Inject SMTP settings from docmost-smtp credential')
         string(name: 'SMTP_HOST', defaultValue: '', description: 'SMTP server (when ENABLE_SMTP)')
