@@ -14,7 +14,10 @@ services:
     environment:
       APP_URL: ${APP_URL:?APP_URL is required}
       APP_SECRET: ${APP_SECRET:?APP_SECRET is required}
-      DATABASE_URL: postgresql://${POSTGRES_USER:-docmost}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@db:5432/${POSTGRES_DB:-docmost}?schema=public
+      # The password must be URL-encoded inside the URL; scripts/write_env.sh writes
+      # POSTGRES_PASSWORD_URLENCODED. Falls back to the raw password (fine when it
+      # is only letters/digits) for hand-written .env files.
+      DATABASE_URL: postgresql://${POSTGRES_USER:-docmost}:${POSTGRES_PASSWORD_URLENCODED:-${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}}@db:5432/${POSTGRES_DB:-docmost}?schema=public
       REDIS_URL: redis://redis:6379
       MAIL_DRIVER: ${MAIL_DRIVER:-smtp}
       MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-}
