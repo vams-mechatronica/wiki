@@ -66,42 +66,19 @@ pipeline {
     stages {
         stage('Prepare .env') {
             steps {
-                withCredentials([
-                    string(credentialsId: 'docmost-app-secret', variable: 'APP_SECRET'),
-                    string(credentialsId: 'docmost-db-password', variable: 'POSTGRES_PASSWORD')
-                ]) {
-                    // Single-quoted so secrets are expanded by the shell, never by Groovy.
-                    sh '''
-                        set -eu
-                        umask 077
-                        cat > .env <<EOF
-COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME}
-DOCMOST_VERSION=${DOCMOST_VERSION}
-APP_URL=${APP_URL}
-DOCMOST_PORT=${DOCMOST_PORT}
-APP_SECRET=${APP_SECRET}
-POSTGRES_DB=docmost
-POSTGRES_USER=docmost
-POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-EOF
-                    '''
-                }
                 script {
+                    def creds = [
+                        string(credentialsId: 'docmost-app-secret', variable: 'APP_SECRET'),
+                        string(credentialsId: 'docmost-db-password', variable: 'POSTGRES_PASSWORD')
+                    ]
                     if (params.ENABLE_SMTP) {
-                        withCredentials([usernamePassword(credentialsId: 'docmost-smtp',
-                                usernameVariable: 'SMTP_USERNAME', passwordVariable: 'SMTP_PASSWORD')]) {
-                            sh '''
-                                set -eu
-                                cat >> .env <<EOF
-MAIL_DRIVER=smtp
-MAIL_FROM_ADDRESS=${MAIL_FROM_ADDRESS}
-SMTP_HOST=${SMTP_HOST}
-SMTP_PORT=${SMTP_PORT}
-SMTP_USERNAME=${SMTP_USERNAME}
-SMTP_PASSWORD=${SMTP_PASSWORD}
-EOF
-                            '''
-                        }
+                        creds << usernamePassword(credentialsId: 'docmost-smtp',
+                                usernameVariable: 'SMTP_USERNAME', passwordVariable: 'SMTP_PASSWORD')
+                    }
+                    // Secrets reach the script as env vars, never through Groovy strings.
+                    // It quotes every value and URL-encodes the DB password for DATABASE_URL.
+                    withCredentials(creds) {
+                        sh 'bash scripts/write_env.sh .env'
                     }
                 }
                 sh 'chmod +x scripts/*.sh'
