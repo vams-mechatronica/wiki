@@ -8,7 +8,7 @@
 //   docmost-smtp         Username/password - only when ENABLE_SMTP is checked
 //
 // Required plugins: Pipeline, Credentials Binding, SSH Agent (for remote target).
-// The agent needs: docker CLI with the compose plugin, curl, gzip.
+// The node running it needs: docker CLI with the compose plugin, curl, gzip.
 
 def previousVersion = ''
 
@@ -24,7 +24,11 @@ def onTarget(Closure body) {
 }
 
 pipeline {
-    agent { label 'docker' }
+    // Runs on any node -- on the shared server that's the built-in node of the
+    // Jenkins container (api-services/jenkins), which has the docker CLI +
+    // compose plugin and talks to the host daemon via /var/run/docker.sock.
+    // The stack uses only named volumes, so the workspace path doesn't matter.
+    agent any
 
     options {
         disableConcurrentBuilds()

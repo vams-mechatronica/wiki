@@ -22,7 +22,7 @@ Jenkins agent ──(docker compose, optionally over SSH)──► Docker host
 
 ## Jenkins setup
 
-1. **Agent**: a node labelled `docker` with the Docker CLI, the Compose v2 plugin, `curl` and `gzip`. The `jenkins` user needs Docker access (it must be in the `docker` group).
+1. **Node**: the pipeline uses `agent any`. Whichever node runs it needs the Docker CLI, the Compose v2 plugin, `curl` and `gzip`, plus access to the Docker daemon. The shared Jenkins container (`api-services/jenkins`) already has all of these: its built-in node uses the host's `/var/run/docker.sock`.
 2. **Plugins**: Pipeline, Git, Credentials Binding, and SSH Agent (only needed for remote deploys).
 3. **Credentials** (*Manage Jenkins → Credentials*):
 
